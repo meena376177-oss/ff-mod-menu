@@ -58,6 +58,7 @@ Information:
 --]]
 
 local client = game:GetService('Players').LocalPlayer;
+local http = game:GetService('HttpService');
 local set_identity = (type(syn) == 'table' and syn.set_thread_identity) or setidentity or setthreadcontext
 
 local function fail(r) return client:Kick(r) end
@@ -90,6 +91,50 @@ if type(getloadedmodules) ~= 'function' then return fail('Unsupported exploit (m
 if type(getgc) ~= 'function' then return fail('Unsupported exploit (misssing "getgc")') end
 
 local library = urlLoad("https://raw.githubusercontent.com/wally-rblx/uwuware-ui/main/main.lua")
+
+local options = {}
+
+function toJSON(array)
+   return http:JSONEncode(array)
+end
+
+function fromJSON(str)
+   return http:JSONDecode(str)
+end
+
+function options.Save()
+   writefile('FFAutoPlay.json',toJSON({
+   autoPlayerToggle=library.flags.autoPlayerToggle;
+   autoPlayerMode=library.flags.autoPlayerMode;
+   sickChance=library.flags.sickChance;
+   goodChance=library.flags.goodChance;
+   okChance=library.flags.okChance;
+   badChance=library.flags.badChance;
+   missChance=library.flags.missChance;
+   autoDelay=library.flags.autoDelay;
+   sickBind=library.flags.sickBind;
+   goodBind=library.flags.goodBind;
+   okBind=library.flags.okBind;
+   badBind=library.flags.badBind;
+   }));
+end
+
+function options.Load()
+   local sts = fromJSON(readfile('FFAutoPlay.json'));
+   options.sickBind:SetKey(sts.sickBind);
+   options.goodBind:SetKey(sts.goodBind);
+   options.okBind:SetKey(sts.okBind);
+   options.badBind:SetKey(sts.badBind);
+   options.autoPlayerToggle:SetKey(sts.autoPlayerToggle);
+   options.autoPlayerMode:SetValue(sts.autoPlayerMode);
+   options.sickChance:SetValue(sts.sickChance);
+   options.goodChance:SetValue(sts.goodChance);
+   options.okChance:SetValue(sts.okChance);
+   options.badChance:SetValue(sts.badChance);
+   options.missChance:SetValue(sts.missChance);
+   options.autoDelay:SetValue(sts.autoDelay);
+   sts = nil; -- clear it from memory
+end
 
 local framework, scrollHandler
 local counter = 0
@@ -334,40 +379,51 @@ do
         local folder = window:AddFolder('Autoplayer') do
             local toggle = folder:AddToggle({ text = 'Autoplayer', flag = 'autoPlayer' })
 
-            folder:AddToggle({ text = 'Secondary press mode', flag = 'secondaryPressMode' }) -- alternate mode if something breaks on krml or whatever
+            options.secondaryPressMode = folder:AddToggle({ text = 'Secondary press mode', flag = 'secondaryPressMode' }) -- alternate mode if something breaks on krml or whatever
             folder:AddLabel({ text = "Enable if autoplayer breaks" })
             
             -- Fixed to use toggle:SetState
-            folder:AddBind({ text = 'Autoplayer toggle', flag = 'autoPlayerToggle', key = Enum.KeyCode.End, callback = function()
+            options.autoPlayerToggle = folder:AddBind({ text = 'Autoplayer toggle', flag = 'autoPlayerToggle', key = Enum.KeyCode.End, callback = function()
                 toggle:SetState(not toggle.state)
             end })
 
             folder:AddDivider()
-            folder:AddList({ text = 'Autoplayer mode', flag = 'autoPlayerMode', values = { 'Chances', 'Manual'  } })
+            options.autoPlayerMode = folder:AddList({ text = 'Autoplayer mode', flag = 'autoPlayerMode', values = { 'Chances', 'Manual'  } })
             folder:AddDivider()
-            folder:AddSlider({ text = 'Sick %', flag = 'sickChance', min = 0, max = 100, value = 100 })
-            folder:AddSlider({ text = 'Good %', flag = 'goodChance', min = 0, max = 100, value = 0 })
-            folder:AddSlider({ text = 'Ok %', flag = 'okChance', min = 0, max = 100, value = 0 })
-            folder:AddSlider({ text = 'Bad %', flag = 'badChance', min = 0, max = 100, value = 0 })
-            folder:AddSlider({ text = 'Miss %', flag = 'missChance', min = 0, max = 100, value = 0 })
-            folder:AddSlider({ text = 'Release delay (ms)', flag = 'autoDelay', min = 0, max = 350, value = 50 })
+            options.sickChance = folder:AddSlider({ text = 'Sick %', flag = 'sickChance', min = 0, max = 100, value = 100 })
+            options.goodChance = folder:AddSlider({ text = 'Good %', flag = 'goodChance', min = 0, max = 100, value = 0 })
+            options.okChance = folder:AddSlider({ text = 'Ok %', flag = 'okChance', min = 0, max = 100, value = 0 })
+            options.badChance = folder:AddSlider({ text = 'Bad %', flag = 'badChance', min = 0, max = 100, value = 0 })
+            options.missChance = folder:AddSlider({ text = 'Miss %', flag = 'missChance', min = 0, max = 100, value = 0 })
+            options.autoDelay = folder:AddSlider({ text = 'Release delay (ms)', flag = 'autoDelay', min = 0, max = 350, value = 50 })
         end
 
         local folder = window:AddFolder('Manual keybinds') do
-            folder:AddBind({ text = 'Sick', flag = 'sickBind', key = Enum.KeyCode.One, hold = true, callback = function(val) library.flags.sickHeld = (not val) end, })
-            folder:AddBind({ text = 'Good', flag = 'goodBind', key = Enum.KeyCode.Two, hold = true, callback = function(val) library.flags.goodHeld = (not val) end, })
-            folder:AddBind({ text = 'Ok', flag = 'okBind', key = Enum.KeyCode.Three, hold = true, callback = function(val) library.flags.okayHeld = (not val) end, })
-            folder:AddBind({ text = 'Bad', flag = 'badBind', key = Enum.KeyCode.Four, hold = true, callback = function(val) library.flags.missHeld = (not val) end, })
+            options.sickBind = folder:AddBind({ text = 'Sick', flag = 'sickBind', key = Enum.KeyCode.One, hold = true, callback = function(val) library.flags.sickHeld = (not val) end, })
+            options.goodBind = folder:AddBind({ text = 'Good', flag = 'goodBind', key = Enum.KeyCode.Two, hold = true, callback = function(val) library.flags.goodHeld = (not val) end, })
+            options.okBind = folder:AddBind({ text = 'Ok', flag = 'okBind', key = Enum.KeyCode.Three, hold = true, callback = function(val) library.flags.okayHeld = (not val) end, })
+            options.badBind = folder:AddBind({ text = 'Bad', flag = 'badBind', key = Enum.KeyCode.Four, hold = true, callback = function(val) library.flags.missHeld = (not val) end, })
+        end
+      
+        if type(writefile) == 'function' and type(readfile) == 'function' then
+            local folder = window:AddFolder('Storage') do
+               folder:AddButton({ text = 'Save Settings', callback = function()
+                  options.Save()
+               end })
+               folder:AddButton({ text = 'Load Settings', callback = function()
+                  options.Load()
+               end })
+            end
         end
 
         local folder = window:AddFolder('Credits') do
             folder:AddLabel({ text = 'Jan - UI library' })
             folder:AddLabel({ text = 'wally - Script' })
-            folder:AddLabel({ text = 'Sezei - Contributor'})
+            folder:AddLabel({ text = 'Sezei - PC Exploder'})
         end
 
-        window:AddLabel({ text = 'Version 1.7e' })
-        window:AddLabel({ text = 'Updated 12/11/21' })
+        window:AddLabel({ text = 'Version 1.8' })
+        window:AddLabel({ text = 'Updated 1/14/22' })
         window:AddLabel({ text = 'i hate ice bear sometimes' })
       
         window:AddDivider()
