@@ -289,7 +289,7 @@ local saveManager = {} do
 
 end
 
-local function hitnote(arrow,arrowdata,keyCodeMap)
+local function hitnote(arrow,arrowData,keyCodeMap)
     fastSpawn(function()
         arrow.Marked = true;
         local keyCode = keyCodeMap[arrowData[position].Keybinds.Keyboard[1]]
