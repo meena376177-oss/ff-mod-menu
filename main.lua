@@ -292,7 +292,7 @@ end
 -- autoplayer
 local chanceValues do
     chanceValues = { 
-        Sick = 98,
+        Sick = 99.5,
         Good = 93,
         Ok = 87,
         Bad = 75,
