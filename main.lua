@@ -289,10 +289,37 @@ local saveManager = {} do
 
 end
 
+local function hitnote(arrow,arrowdata,keyCodeMap)
+    fastSpawn(function()
+        arrow.Marked = true;
+        local keyCode = keyCodeMap[arrowData[position].Keybinds.Keyboard[1]]
+        local function delayThing()
+            if arrow.Data.Length > 0 then
+                fastWait(arrow.Data.Length + (library.flags.heldDelay / 1000))
+            else
+                if library.flags.autoDelay > 20 then -- waste of resources if above 20, and would cause an unnecessary delay
+                    fastWait(library.flags.autoDelay / 1000)
+                end
+            end
+        end
+        if library.flags.secondaryPressMode then
+            virtualInputManager:SendKeyEvent(true, keyCode, false, nil)
+            delayThing()
+            virtualInputManager:SendKeyEvent(false, keyCode, false, nil)
+        else
+            fireSignal(scrollHandler, userInputService.InputBegan, { KeyCode = keyCode, UserInputType = Enum.UserInputType.Keyboard }, false)
+            delayThing()
+            fireSignal(scrollHandler, userInputService.InputEnded, { KeyCode = keyCode, UserInputType = Enum.UserInputType.Keyboard }, false)
+        end
+
+        arrow.Marked = nil;
+    end)
+end
+
 -- autoplayer
 local chanceValues do
     chanceValues = { 
-        Sick = 99.5,
+        Sick = 98.5,
         Good = 93,
         Ok = 87,
         Bad = 75,
@@ -390,30 +417,7 @@ local chanceValues do
 
                     local hitChance = (library.flags.autoPlayerMode == 'Manual' and result or arrow._hitChance)
                     if hitChance ~= "Miss" and noteTime >= chanceValues[arrow._hitChance] then
-                        fastSpawn(function()
-                            arrow.Marked = true;
-                            local keyCode = keyCodeMap[arrowData[position].Keybinds.Keyboard[1]]
-
-                            if library.flags.secondaryPressMode then
-                                virtualInputManager:SendKeyEvent(true, keyCode, false, nil)
-                            else
-                                fireSignal(scrollHandler, userInputService.InputBegan, { KeyCode = keyCode, UserInputType = Enum.UserInputType.Keyboard }, false)
-                            end
-
-                            if arrow.Data.Length > 0 then
-                                fastWait(arrow.Data.Length + (library.flags.heldDelay / 1000))
-                            else
-                                fastWait(library.flags.autoDelay / 1000)
-                            end
-
-                            if library.flags.secondaryPressMode then
-                                virtualInputManager:SendKeyEvent(false, keyCode, false, nil)
-                            else
-                                fireSignal(scrollHandler, userInputService.InputEnded, { KeyCode = keyCode, UserInputType = Enum.UserInputType.Keyboard }, false)
-                            end
-
-                            arrow.Marked = nil;
-                        end)
+                        hitnote(arrow,arrowData,keyCodeMap)
                     end
                 end
             end
@@ -457,6 +461,11 @@ local folder = windows.autoplayer:AddFolder('Main') do
 		end
 	end})
 
+    local fonts = {}
+    for i,enm in pairs(Enum.Font:GetEnumItems()) do
+        fonts[enm.Name] = enm
+    end
+
     folder:AddList({ text = "In-Game Font A", values = fonts, value = "PermanentMarker", callback = function(val)
         client.PlayerGui.GameUI.TopbarLabel.Font = Enum.Font[val]
         client.PlayerGui.GameUI.Score.Left.Font = Enum.Font[val]
@@ -472,17 +481,17 @@ local folder = windows.autoplayer:AddFolder('Main') do
     end})
 end
 
-local folder = windows.customization:AddFolder('Hit chances') do
-    folder:AddSlider({ text = 'Sick %', flag = 'sickChance', min = 0, max = 100, value = 100 })
-    folder:AddSlider({ text = 'Good %', flag = 'goodChance', min = 0, max = 100, value = 0 })
-    folder:AddSlider({ text = 'Ok %', flag = 'okChance', min = 0, max = 100, value = 0 })
-    folder:AddSlider({ text = 'Bad %', flag = 'badChance', min = 0, max = 100, value = 0 })
-    folder:AddSlider({ text = 'Miss %', flag = 'missChance', min = 0, max = 100, value = 0 })
+local folder = windows.customization:AddFolder('Hit Weights') do
+    folder:AddSlider({ text = 'Sick', flag = 'sickChance', min = 0, max = 200, value = 200 })
+    folder:AddSlider({ text = 'Good', flag = 'goodChance', min = 0, max = 200, value = 0 })
+    folder:AddSlider({ text = 'Ok', flag = 'okChance', min = 0, max = 200, value = 0 })
+    folder:AddSlider({ text = 'Bad', flag = 'badChance', min = 0, max = 200, value = 0 })
+    folder:AddSlider({ text = 'Miss', flag = 'missChance', min = 0, max = 200, value = 0 })
 end
 
 local folder = windows.customization:AddFolder('Timing') do
-    folder:AddSlider({ text = 'Release delay (ms)', flag = 'autoDelay', min = 0, max = 500, value = 0 })
-    folder:AddSlider({ text = 'Held delay (ms)', flag = 'heldDelay', min = -40, max = 250, value = -20 })
+    folder:AddSlider({ text = 'Release delay (ms)', flag = 'autoDelay', min = 0, max = 700, value = 0 })
+    folder:AddSlider({ text = 'Held delay (ms)', flag = 'heldDelay', min = -30, max = 250, value = -20 })
 end
 
 local folder = windows.customization:AddFolder('Keybinds') do
